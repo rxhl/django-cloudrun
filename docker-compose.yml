@@ -1,0 +1,27 @@
+version: '3.9'
+
+services:
+  app:
+    container_name: django-app
+    build:
+      context: .
+    ports:
+      - 8000:8000
+    volumes:
+      - ./src:/app
+      - ./creds.json:/secrets/creds.json
+    env_file:
+      - ./.env
+    restart: always
+
+  # The proxy will help us connect to remote CloudSQL instance locally.
+  # Make sure to turn off any VPNs for the proxy to work.
+  cloudsqlproxy:
+    container_name: cloudsql-proxy
+    image: gcr.io/cloudsql-docker/gce-proxy:1.19.1
+    volumes:
+      - ./creds.json:/secrets/cloudsql/creds.json
+    ports:
+      - 127.0.0.1:5432:5432
+    command: /cloud_sql_proxy -instances="django-cloudrun-project:us-east1:django-dev-db"=tcp:0.0.0.0:5432 -credential_file=/secrets/cloudsql/creds.json
+    restart: always
